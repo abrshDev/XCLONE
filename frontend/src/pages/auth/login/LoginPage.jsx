@@ -1,27 +1,57 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
+import toast from "react-hot-toast";
 import XSvg from "../../../components/svgs/X";
 
 import { MdOutlineMail } from "react-icons/md";
 import { MdPassword } from "react-icons/md";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
+  const queryClient = useQueryClient();
+  const { mutate, isPending, isError, error } = useMutation({
+    mutationFn: async ({ username, password }) => {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
 
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "failed to log in");
+        return;
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      setFormData({ username: "", password: "" });
+      queryClient.invalidateQueries({ queryKey: ["authuser"] });
+      toast("User logged in!", {
+        icon: "👏",
+        style: {
+          borderRadius: "10px",
+          background: "#333",
+          color: "#fff",
+        },
+      });
+    },
+  });
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
+    mutate(formData);
   };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  const isError = false;
 
   return (
     <div className="max-w-screen-xl mx-auto flex h-screen">
@@ -41,6 +71,7 @@ const LoginPage = () => {
               name="username"
               onChange={handleInputChange}
               value={formData.username}
+              required
             />
           </label>
 
@@ -53,12 +84,13 @@ const LoginPage = () => {
               name="password"
               onChange={handleInputChange}
               value={formData.password}
+              required
             />
           </label>
           <button className="btn rounded-full btn-primary text-white">
-            Login
+            {isPending ? "Loading..." : "Login"}
           </button>
-          {isError && <p className="text-red-500">Something went wrong</p>}
+          {isError && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col gap-2 mt-4">
           <p className="text-white text-lg">{"Don't"} have an account?</p>
