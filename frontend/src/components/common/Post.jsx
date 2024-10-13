@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
+import { formatPostDate } from "../../utils/data";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
@@ -17,9 +18,8 @@ const Post = ({ post }) => {
 
   const isMyPost = authuser._id === post.user._id;
 
-  const formattedDate = "1h";
+  const formattedDate = formatPostDate(post.createdAt);
 
-  const isCommenting = false;
   const queryClient = useQueryClient();
   const { mutate: likepost, isPending: isliking } = useMutation({
     mutationFn: async () => {
@@ -72,15 +72,44 @@ const Post = ({ post }) => {
       });
     },
   });
+
+  const { mutate: commentonpost, isPending: isCommenting } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/post/comment/${post._id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: comment }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "something went wrong");
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      setComment("");
+      toast.success("commented successfully");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
   const handleDeletePost = () => {
     deletepost();
   };
 
   const handlePostComment = (e) => {
     e.preventDefault();
+    if (isCommenting) return;
+    commentonpost();
   };
 
   const handleLikePost = () => {
+    if (isliking) return;
     likepost();
   };
 
@@ -194,11 +223,7 @@ const Post = ({ post }) => {
                       onChange={(e) => setComment(e.target.value)}
                     />
                     <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-                      {isCommenting ? (
-                        <span className="loading loading-spinner loading-md"></span>
-                      ) : (
-                        "Post"
-                      )}
+                      {isCommenting ? <LoadingSpinner size={"md"} /> : "Post"}
                     </button>
                   </form>
                 </div>
