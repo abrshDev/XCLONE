@@ -13,7 +13,7 @@ const Post = ({ post }) => {
   const [comment, setComment] = useState("");
   const { data: authuser } = useQuery({ queryKey: ["authuser"] });
   const postOwner = post.user;
-  const isLiked = false;
+  const isLiked = post.likes.includes(authuser._id);
 
   const isMyPost = authuser._id === post.user._id;
 
@@ -21,7 +21,24 @@ const Post = ({ post }) => {
 
   const isCommenting = false;
   const queryClient = useQueryClient();
-  const { mutate: deletepost, isPending } = useMutation({
+  const { mutate: likepost, isPending: isliking } = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`api/post/like/${post._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "something went wrong");
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
+  const { mutate: deletepost, isPending: isdeleting } = useMutation({
     mutationFn: async () => {
       try {
         const res = await fetch(`/api/post/delete/${post._id}`, {
@@ -35,9 +52,24 @@ const Post = ({ post }) => {
         throw error;
       }
     },
-    onSuccess: (data) => {
-      toast.success(data.message);
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    onSuccess: (updatelikes) => {
+      toast.success("Post liked successfully");
+
+      // Use queryClient to update just the post that was liked
+      queryClient.setQueryData(["posts"], (olddata) => {
+        // Check if olddata exists and is an array
+        if (!olddata) return [];
+
+        // Use map to return a new array but only update the specific post
+        return olddata.map((p) => {
+          if (p._id === post._id) {
+            // Return a shallow copy of the post with the updated likes
+            return { ...p, likes: updatelikes };
+          }
+          // Return the post unchanged
+          return p;
+        });
+      });
     },
   });
   const handleDeletePost = () => {
@@ -48,7 +80,9 @@ const Post = ({ post }) => {
     e.preventDefault();
   };
 
-  const handleLikePost = () => {};
+  const handleLikePost = () => {
+    likepost();
+  };
 
   return (
     <>
@@ -58,7 +92,7 @@ const Post = ({ post }) => {
             to={`/profile/${postOwner.username}`}
             className="w-8 rounded-full overflow-hidden"
           >
-            <img src={postOwner.profileImg || "/avatar-placeholder.png"} />
+            <img src={postOwner.profileimg || "/avatar-placeholder.png"} />
           </Link>
         </div>
         <div className="flex flex-col flex-1">
@@ -75,13 +109,13 @@ const Post = ({ post }) => {
             </span>
             {isMyPost && (
               <span className="flex justify-end flex-1">
-                {!isPending && (
+                {!isdeleting && (
                   <FaTrash
                     className="cursor-pointer hover:text-red-500"
                     onClick={handleDeletePost}
                   />
                 )}
-                {isPending && <LoadingSpinner />}
+                {isdeleting && <LoadingSpinner />}
               </span>
             )}
           </div>
@@ -110,7 +144,7 @@ const Post = ({ post }) => {
                   {post.comments.length}
                 </span>
               </div>
-              {/* We're using Modal Component from DaisyUI */}
+              {/* using Modal Component from DaisyUI */}
               <dialog
                 id={`comments_modal${post._id}`}
                 className="modal border-none outline-none"
@@ -182,10 +216,11 @@ const Post = ({ post }) => {
                 className="flex gap-1 items-center group cursor-pointer"
                 onClick={handleLikePost}
               >
-                {!isLiked && (
+                {isliking && <LoadingSpinner size={"md"} />}
+                {!isLiked && !isliking && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
                 )}
-                {isLiked && (
+                {isLiked && !isliking && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500 " />
                 )}
 
