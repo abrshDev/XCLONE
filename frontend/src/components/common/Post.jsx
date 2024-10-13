@@ -129,7 +129,7 @@ const Post = ({ post }) => {
                           <div className="w-8 rounded-full">
                             <img
                               src={
-                                comment.user.profileImg ||
+                                comment.user.profileimg ||
                                 "/avatar-placeholder.png"
                               }
                             />

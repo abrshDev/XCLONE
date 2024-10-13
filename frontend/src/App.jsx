@@ -19,7 +19,7 @@ function App() {
         const res = await fetch("/api/auth/me");
         const data = await res.json();
         if (data.error) return false;
-        if (!res.ok) throw new Error(data.error || "log out failed");
+        if (!res.ok) throw new Error(data.error || "some thing went wrong");
         console.log(data);
         return data;
       } catch (error) {
