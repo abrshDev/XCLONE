@@ -4,34 +4,58 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaUser } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const NotificationPage = () => {
-  const isLoading = false;
-  const notifications = [
-    {
-      _id: "1",
-      from: {
-        _id: "1",
-        username: "johndoe",
-        profileImg: "/avatars/boy2.png",
-      },
-      type: "follow",
-    },
-    {
-      _id: "2",
-      from: {
-        _id: "2",
-        username: "janedoe",
-        profileImg: "/avatars/girl1.png",
-      },
-      type: "like",
-    },
-  ];
+  const { data: authuser } = useQuery({ queryKey: ["authuser"] });
 
+  const {
+    data: notifications,
+    isPending,
+    refetch,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["notiffication"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/notiffication");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "some thing went wrong");
+        return data;
+      } catch (error) {
+        throw error;
+      }
+    },
+  });
+  const { mutate: deleteNotification, isLoading } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/notiffication", {
+          method: "DELETE",
+        });
+        const data = await res.json;
+        if (!res.ok) throw new Error(data.error || "some thing went wrong");
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    onSuccess: (data) => {
+      refetch();
+      toast("notiffication deleted succefully", {
+        icon: "👏",
+        style: {
+          borderRadius: "10px",
+          background: "#333",
+          color: "#fff",
+        },
+      });
+    },
+  });
   const deleteNotifications = () => {
-    alert("All notifications deleted");
+    deleteNotification();
   };
-
   return (
     <>
       <div className="flex-[4_4_0] border-l border-r border-gray-700 min-h-screen">
@@ -51,11 +75,12 @@ const NotificationPage = () => {
             </ul>
           </div>
         </div>
-        {isLoading && (
+        {(isLoading || isRefetching) && (
           <div className="flex justify-center h-full items-center">
-            <LoadingSpinner size="lg" />
+            <LoadingSpinner size="md" />
           </div>
         )}
+
         {notifications?.length === 0 && (
           <div className="text-center p-4 font-bold">No notifications 🤔</div>
         )}
@@ -68,12 +93,13 @@ const NotificationPage = () => {
               {notification.type === "like" && (
                 <FaHeart className="w-7 h-7 text-red-500" />
               )}
+
               <Link to={`/profile/${notification.from.username}`}>
                 <div className="avatar">
                   <div className="w-8 rounded-full">
                     <img
                       src={
-                        notification.from.profileImg ||
+                        notification.from.profileimg ||
                         "/avatar-placeholder.png"
                       }
                     />
