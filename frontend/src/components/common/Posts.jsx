@@ -3,36 +3,48 @@ import PostSkeleton from "../skeletons/PostSkeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-const Posts = ({ feedType }) => {
-  //const isLoading = false;
+// Create a function to handle different fetch logic based on feedType
+const fetchPosts = async (feedType, userid, username) => {
+  let res;
+  switch (feedType) {
+    case "forYou":
+      res = await fetch("/api/post/all");
+      break;
+    case "following":
+      res = await fetch("/api/post/following");
+      break;
+    case "likes":
+      res = await fetch(`/api/post/like/${userid}`);
+      break;
+    case "posts":
+      res = await fetch(`/api/post/user/${username}`);
 
+      break;
+    default:
+      throw new Error("Invalid feed type");
+  }
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "something went wrong");
+
+  return data;
+};
+
+const Posts = ({ feedType, userid, username }) => {
   const {
-    data: posts,
+    data: posts = [], // Default to empty array if no data
     isFetching,
     refetch,
     isLoading,
   } = useQuery({
-    queryKey: ["posts"],
-    queryFn: async () => {
-      try {
-        let res;
-        if (feedType === "forYou") {
-          res = await fetch("/api/post/all");
-        } else if (feedType === "following") {
-          res = await fetch("/api/post/following");
-        }
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "something went wrong");
-        console.log(data);
-        return data;
-      } catch (error) {
-        throw error;
-      }
-    },
+    queryKey: ["posts"], // Include feedType in queryKey to refetch based on type
+    queryFn: () => fetchPosts(feedType, userid, username),
   });
+
   useEffect(() => {
-    refetch();
+    refetch(); // Refetch when feedType changes
   }, [feedType, refetch]);
+
   return (
     <>
       {(isLoading || isFetching) && (
@@ -42,10 +54,10 @@ const Posts = ({ feedType }) => {
           <PostSkeleton />
         </div>
       )}
-      {!isLoading && !isFetching && posts?.length === 0 && (
+      {!isLoading && !isFetching && posts.length === 0 && (
         <p className="text-center my-4">No posts in this tab. Switch 👻</p>
       )}
-      {!isLoading && !isFetching && posts && (
+      {!isLoading && !isFetching && posts.length > 0 && (
         <div>
           {posts.map((post) => (
             <Post key={post._id} post={post} />
@@ -55,4 +67,5 @@ const Posts = ({ feedType }) => {
     </>
   );
 };
+
 export default Posts;

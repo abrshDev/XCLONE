@@ -184,7 +184,7 @@ export const getuserposts = async (req, res) => {
       .populate({ path: "user", select: "-password" })
       .populate({ path: "comments.user", select: "-password" });
 
-    res.status(200).json({ posts });
+    return res.status(200).json(posts);
   } catch (error) {
     console.log("error in get user posts controller : ", error.message);
     return res.status(500).json("server error");
