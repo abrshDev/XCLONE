@@ -25,13 +25,13 @@ const EditProfileModal = ({ authuser }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            fullname,
-            username,
-            email,
-            bio,
-            link,
-            newpassword,
-            currentpasswor,
+            fullname: formData.fullname,
+            username: formData.username,
+            email: formData.email,
+            bio: formData.bio,
+            link: formData.link,
+            newpassword: formData.newpassword,
+            currentpassword: formData.currentpassword, // Fix typo here too (currentpassword)
           }),
         });
         const data = await res.json();
@@ -45,27 +45,25 @@ const EditProfileModal = ({ authuser }) => {
       toast.success(data.message);
     },
     onError: (error) => {
-      toast.error(error.message, {
-        style: {
-          borderRadius: "10px",
-          background: "#333",
-          color: "#fff",
-        },
-      });
+      toast.error(error.message);
       queryClient.invalidateQueries({ queryKey: ["authuser"] });
       queryClient.invalidateQueries({ queryKey: ["updateprofiles"] });
     },
   });
+
   useEffect(() => {
-    setFormData({
-      fullname: authuser.fullname,
-      username: authuser.username,
-      bio: authuser.bio,
-      link: authuser.link,
-      email: authuser.email,
-      currentpassword: "",
-      newpassword: "",
-    });
+    console.log(authuser); // Check if authuser is received
+    if (authuser) {
+      setFormData({
+        fullname: authuser.fullname || "",
+        username: authuser.username || "",
+        bio: authuser.bio || "",
+        link: authuser.link || "",
+        email: authuser.email || "",
+        currentpassword: "",
+        newpassword: "",
+      });
+    }
   }, [authuser]);
   return (
     <>
@@ -84,7 +82,7 @@ const EditProfileModal = ({ authuser }) => {
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              alert("Profile updated successfully");
+              updateprofiles();
             }}
           >
             <div className="flex flex-wrap gap-2">
@@ -148,10 +146,7 @@ const EditProfileModal = ({ authuser }) => {
               name="link"
               onChange={handleInputChange}
             />
-            <button
-              className="btn btn-primary rounded-full btn-sm text-white"
-              onClick={() => updateprofiles()}
-            >
+            <button className="btn btn-primary rounded-full btn-sm text-white">
               {isPending ? "updating" : "update"}
             </button>
           </form>

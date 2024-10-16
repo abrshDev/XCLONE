@@ -68,13 +68,7 @@ const ProfilePage = () => {
       queryclient.invalidateQueries({ queryKey: ["updateprofile"] });
     },
     onError: (error) => {
-      toast.error(error.message, {
-        style: {
-          borderRadius: "10px",
-          background: "#333",
-          color: "#fff",
-        },
-      });
+      toast.error(error.message);
     },
   });
   const isMyProfile = authuser._id === user?._id;
@@ -129,10 +123,7 @@ const ProfilePage = () => {
                     className="absolute top-2 right-2 rounded-full p-2 bg-gray-800 bg-opacity-75 cursor-pointer opacity-0 group-hover/cover:opacity-100 transition duration-200"
                     onClick={() => coverimgRef.current.click()}
                   >
-                    <MdEdit
-                      className="w-5 h-5 text-white"
-                      authuser={authuser}
-                    />
+                    <MdEdit className="w-5 h-5 text-white" />
                   </div>
                 )}
 
@@ -172,7 +163,7 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className="flex justify-end px-4 mt-5">
-                {isMyProfile && <EditProfileModal />}
+                {isMyProfile && <EditProfileModal authuser={authuser} />}
                 {!isMyProfile && (
                   <button
                     className="btn btn-outline rounded-full btn-sm"
