@@ -32,16 +32,14 @@ app.use("/api/auth", authroutes);
 app.use("/api/user", userroutes);
 app.use("/api/post", postroutes);
 app.use("/api/notiffication", notifficationroutes);
-/* if (process.env.MONGO_ENV === "production") {
+
+if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "frontend/dist")));
   app.get("*", (req, res) => {
     res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
   });
-} */
+}
 app.listen(PORT, () => {
   console.log("Server is running on port: ", PORT);
   connectdb();
 });
-
-/*  "start": "node backend/server.js",
-    "build": "npm install &&  npm install --prefix frontend && npm run build --prefix frontend " */
